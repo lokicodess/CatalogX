@@ -8,7 +8,9 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lokicodess/CatalogX/internal/handler"
 	"github.com/lokicodess/CatalogX/internal/middleware"
+	"github.com/lokicodess/CatalogX/internal/repository/postgres"
 	config "github.com/lokicodess/CatalogX/pkg/config"
 	"github.com/lokicodess/CatalogX/pkg/database"
 )
@@ -35,7 +37,12 @@ func main() {
 		app.Logger.Error(err.Error())
 		os.Exit(1)
 	}
+
 	logger.Info("connected database", "port", 5432)
+
+	productRepo := postgres.NewPostgresProductRepository(db)
+	productHandler := handler.NewProductHandler(productRepo)
+
 	defer db.Close()
 
 	r := gin.New()
@@ -46,6 +53,11 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	r.POST("/products", productHandler.CreateProduct)
+	r.GET("/products/:id", productHandler.GetProduct)
+	r.GET("/products", productHandler.ListProducts)
+
 	logger.Info("starting server", "addr", cfg.Port, "env", cfg.Env)
 	if err := r.Run(); err != nil {
 		app.Logger.Error(err.Error())

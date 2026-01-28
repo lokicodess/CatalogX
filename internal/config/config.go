@@ -1,9 +1,8 @@
 package config
 
 import (
+	"database/sql"
 	"log/slog"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const Version = "1.0.0"
@@ -19,5 +18,5 @@ type Config struct {
 type Application struct {
 	Config Config
 	Logger *slog.Logger
-	DB     *pgxpool.Pool
+	DB     *sql.DB
 }
