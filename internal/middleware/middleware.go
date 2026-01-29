@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	pkg "github.com/lokicodess/CatalogX/pkg/config"
+	pkg "github.com/lokicodess/CatalogX/internal/config"
 )
 
 func LogRequest(app *pkg.Application) gin.HandlerFunc {

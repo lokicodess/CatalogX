@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/lokicodess/CatalogX/pkg/config"
+	"github.com/lokicodess/CatalogX/internal/config"
 )
 
 func OpenDB(app *config.Application, dsn string) (*pgxpool.Pool, error) {

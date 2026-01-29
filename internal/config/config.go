@@ -10,6 +10,7 @@ const Version = "1.0.0"
 type Config struct {
 	Port      int
 	Env       string
+	JWTSecret string
 	DB_Config struct {
 		Dsn string
 	}

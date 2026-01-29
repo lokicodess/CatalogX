@@ -8,10 +8,11 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	config "github.com/lokicodess/CatalogX/internal/config"
 	"github.com/lokicodess/CatalogX/internal/handler"
 	"github.com/lokicodess/CatalogX/internal/middleware"
 	"github.com/lokicodess/CatalogX/internal/repository/postgres"
-	config "github.com/lokicodess/CatalogX/pkg/config"
+	"github.com/lokicodess/CatalogX/internal/service"
 	"github.com/lokicodess/CatalogX/pkg/database"
 )
 
@@ -22,6 +23,9 @@ func main() {
 	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
 	flag.StringVar(&cfg.Env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.DB_Config.Dsn, "dsn", "postgresql://postgres:postgres@localhost:5432/product_catalog", "Data Source Name")
+
+	// TODO: Remove the default token before pushing in PROD
+	flag.StringVar(&cfg.JWTSecret, "jwt_secret", "dev-secret", "JWT Secret Token")
 
 	flag.Parse()
 
@@ -43,6 +47,12 @@ func main() {
 	productRepo := postgres.NewPostgresProductRepository(db)
 	productHandler := handler.NewProductHandler(productRepo)
 
+	userRepo := postgres.NewPostgresUserRepository(db)
+	userHandler := handler.NewUserHandler(userRepo)
+
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authHandler := handler.NewAuthHandler(authService)
+
 	defer db.Close()
 
 	r := gin.New()
@@ -54,10 +64,18 @@ func main() {
 		})
 	})
 
-	r.POST("/products", productHandler.CreateProduct)
-	r.GET("/products/:id", productHandler.GetProduct)
-	r.GET("/products", productHandler.ListProducts)
+	// Public routes
+	r.POST("/auth/register", userHandler.CreateUser)
+	r.POST("/auth/login", authHandler.Login)
 
+	// Protected routes
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware(app))
+	{
+		protected.POST("/products", productHandler.CreateProduct)
+		protected.GET("/products", productHandler.ListProducts)
+		protected.GET("/products/:id", productHandler.GetProduct)
+	}
 	logger.Info("starting server", "addr", cfg.Port, "env", cfg.Env)
 	if err := r.Run(); err != nil {
 		app.Logger.Error(err.Error())
